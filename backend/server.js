@@ -990,6 +990,122 @@ export function createApp({
     });
   });
 
+  app.patch("/auth/email", requireAuth, async (req, res) => {
+    const { currentPassword, newEmail } = req.body ?? {};
+
+    if (!currentPassword || !newEmail) {
+      return res.status(400).json({ ok: false, error: "currentPassword and newEmail are required" });
+    }
+
+    const normalizedEmail = newEmail.toLowerCase().trim();
+
+    try {
+      const { rows } = await pool.query(
+        "SELECT users.uid, users.email, auth.password_hash FROM users JOIN auth ON auth.uid = users.uid WHERE users.uid = $1",
+        [req.session.userId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ ok: false, error: "User not found" });
+      }
+
+      const user = rows[0];
+      const passwordMatch = await bcrypt.compare(currentPassword, user.password_hash);
+
+      if (!passwordMatch) {
+        return res.status(401).json({ ok: false, error: "Incorrect password" });
+      }
+
+      if (normalizedEmail === user.email) {
+        return res.status(400).json({ ok: false, error: "New email is the same as current email" });
+      }
+
+      await pool.query("UPDATE users SET email = $1 WHERE uid = $2", [normalizedEmail, req.session.userId]);
+
+      return res.json({ ok: true, user: { id: Number(user.uid), email: normalizedEmail } });
+    } catch (e) {
+      if (e.code === "23505") {
+        return res.status(409).json({ ok: false, error: "Email already in use" });
+      }
+      console.error(e);
+      return res.status(500).json({ ok: false, error: "Server error" });
+    }
+  });
+
+  app.patch("/auth/password", requireAuth, async (req, res) => {
+    const { currentPassword, newPassword } = req.body ?? {};
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ ok: false, error: "currentPassword and newPassword are required" });
+    }
+
+    if (newPassword.length < 10) {
+      return res.status(400).json({ ok: false, error: "New password must be at least 10 characters" });
+    }
+
+    try {
+      const { rows } = await pool.query(
+        "SELECT auth.auth_id, auth.password_hash FROM auth WHERE auth.uid = $1",
+        [req.session.userId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ ok: false, error: "User not found" });
+      }
+
+      const authRow = rows[0];
+      const passwordMatch = await bcrypt.compare(currentPassword, authRow.password_hash);
+
+      if (!passwordMatch) {
+        return res.status(401).json({ ok: false, error: "Incorrect current password" });
+      }
+
+      const newHash = await bcrypt.hash(newPassword, 12);
+      await pool.query("UPDATE auth SET password_hash = $1 WHERE auth_id = $2", [newHash, authRow.auth_id]);
+
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ ok: false, error: "Server error" });
+    }
+  });
+
+  app.delete("/auth/account", requireAuth, async (req, res) => {
+    const { currentPassword } = req.body ?? {};
+
+    if (!currentPassword) {
+      return res.status(400).json({ ok: false, error: "currentPassword is required" });
+    }
+
+    try {
+      const { rows } = await pool.query(
+        "SELECT auth.auth_id, auth.password_hash FROM auth WHERE auth.uid = $1",
+        [req.session.userId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ ok: false, error: "User not found" });
+      }
+
+      const authRow = rows[0];
+      const passwordMatch = await bcrypt.compare(currentPassword, authRow.password_hash);
+
+      if (!passwordMatch) {
+        return res.status(401).json({ ok: false, error: "Incorrect password" });
+      }
+
+      await pool.query("DELETE FROM users WHERE uid = $1", [req.session.userId]);
+
+      req.session.destroy(() => {
+        res.clearCookie(SESSION_COOKIE_NAME);
+        return res.json({ ok: true });
+      });
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ ok: false, error: "Server error" });
+    }
+  });
+
   app.get("/auth/logs", requireAuth, async (req, res) => {
     try {
       const { rows } = await pool.query(
