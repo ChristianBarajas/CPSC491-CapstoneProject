@@ -10,6 +10,7 @@ import PartPicker from "./pages/PartPicker";
 import Navbar from "./components/Navbar";
 import UxErrorBoundary from "./components/UxErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ChatBot from "./components/ChatBot";
 import "./App.css";
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              <ChatBot />
             </BuildProvider>
           </main>
         </div>

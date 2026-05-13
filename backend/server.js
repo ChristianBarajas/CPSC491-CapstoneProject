@@ -6,6 +6,7 @@ import connectPgSimple from "connect-pg-simple";
 import dotenv from "dotenv";
 import { pathToFileURL } from "url";
 import { priceTrackingRouter } from "./routes/priceTracking.js";
+import { chatRouter } from "./routes/chat.js";
 import fetch from "node-fetch";
 
 import {
@@ -67,12 +68,12 @@ function applyCors(app, allowedOrigins = parseAllowedOrigins()) {
 function getSessionCookieConfig() {
   const isProduction = process.env.NODE_ENV === "production";
   const configuredSameSite = process.env.SESSION_COOKIE_SAMESITE?.trim().toLowerCase();
-  const validSameSite = new Set(["none"]);
+  const validSameSite = new Set(["none", "lax", "strict"]);
   const sameSite = validSameSite.has(configuredSameSite)
     ? configuredSameSite
     : isProduction
       ? "none"
-      : "none";
+      : "lax";
 
   let secure = parseBooleanEnv(process.env.SESSION_COOKIE_SECURE, isProduction);
   if (sameSite === "none") {
@@ -379,18 +380,15 @@ export function createSessionMiddleware(
       createTableIfMissing: true,
     });
 
+  const cookieConfig = getSessionCookieConfig();
+
   return session({
     name: SESSION_COOKIE_NAME,
     store,
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      sameSite: "none",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 8,
-    },
+    cookie: cookieConfig,
   });
 }
 
@@ -432,6 +430,7 @@ export function createApp({
 
   app.use(express.json());
   app.use("/api", priceTrackingRouter);
+  app.use("/api", chatRouter);
 
   app.get("/", (req, res) => {
     res.type("text").send("ok");
