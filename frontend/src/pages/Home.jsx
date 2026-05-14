@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { animate, stagger } from "animejs";
 import { useBuild } from "../context/BuildContext";
 import { fetchRecommendation } from "../services/buildApi";
 import "./Home.css";
@@ -10,6 +11,56 @@ export default function Home() {
   const [error, setError] = useState("");
   const { setBudget, loadBuild } = useBuild();
   const navigate = useNavigate();
+  const generateRef = useRef(null);
+  const manualRef = useRef(null);
+  const titleRef = useRef(null);
+
+  // Wave animation on the hero title letters
+  useEffect(() => {
+    if (titleRef.current) {
+      // Wrap each character in a span
+      const text = titleRef.current.textContent;
+      titleRef.current.innerHTML = text
+        .split("")
+        .map((char) =>
+          char === " "
+            ? '<span class="hero-letter">&nbsp;</span>'
+            : `<span class="hero-letter">${char}</span>`
+        )
+        .join("");
+
+      const letters = titleRef.current.querySelectorAll(".hero-letter");
+
+      animate(letters, {
+        translateY: [-30, 0],
+        opacity: [0, 1],
+        duration: 600,
+        delay: stagger(30),
+        ease: "out(3)",
+      });
+
+      // Looping wave after initial entrance
+      setTimeout(() => {
+        animate(letters, {
+          translateY: [0, -8, 0],
+          duration: 1200,
+          delay: stagger(40),
+          loop: true,
+          ease: "inOut(2)",
+        });
+      }, 600 + 30 * letters.length);
+    }
+  }, []);
+
+  // Animate buttons on mount
+  useEffect(() => {
+    if (generateRef.current) {
+      generateRef.current.style.opacity = '1';
+    }
+    if (manualRef.current) {
+      manualRef.current.style.opacity = '1';
+    }
+  }, []);
 
   async function handleGenerate(e) {
     e.preventDefault();
@@ -41,7 +92,7 @@ export default function Home() {
       {/* SECTION 1: HERO */}
       <div className="hero-section">
         <div className="hero-content">
-          <h1 className="hero-title">BUILD YOUR PERFECT PC</h1>
+          <h1 ref={titleRef} className="hero-title">BUILD YOUR PERFECT PC</h1>
           <p className="hero-subtitle">
             Generate optimized PC builds tailored to your budget and performance goals.
           </p>
@@ -64,13 +115,14 @@ export default function Home() {
             {error && <p className="budget-error">{error}</p>}
             <div className="cta-group">
               <button
+                ref={generateRef}
                 type="submit"
                 className="btn-primary"
                 disabled={isLoading}
               >
                 {isLoading ? "Generating..." : "Generate Build"}
               </button>
-              <Link to="/picker" className="btn-secondary">
+              <Link ref={manualRef} to="/picker" className="btn-secondary">
                 Build Manually
               </Link>
             </div>

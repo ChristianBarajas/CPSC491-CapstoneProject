@@ -6,6 +6,7 @@ import connectPgSimple from "connect-pg-simple";
 import dotenv from "dotenv";
 import { pathToFileURL } from "url";
 import { priceTrackingRouter } from "./routes/priceTracking.js";
+import { chatRouter } from "./routes/chat.js";
 import fetch from "node-fetch";
 
 import {
@@ -14,6 +15,8 @@ import {
   checkPsuWattageCompatibility,
   checkRamCapacityCompatibility,
 } from "./compatibilityEngine.js";
+
+import { calculateBuildScore } from "./performanceScoring.js";
 
 // Keep dotenv quiet during tests to reduce noise in test output.
 dotenv.config({ quiet: process.env.NODE_ENV === "test" });
@@ -67,12 +70,12 @@ function applyCors(app, allowedOrigins = parseAllowedOrigins()) {
 function getSessionCookieConfig() {
   const isProduction = process.env.NODE_ENV === "production";
   const configuredSameSite = process.env.SESSION_COOKIE_SAMESITE?.trim().toLowerCase();
-  const validSameSite = new Set(["none"]);
+  const validSameSite = new Set(["none", "lax", "strict"]);
   const sameSite = validSameSite.has(configuredSameSite)
     ? configuredSameSite
     : isProduction
       ? "none"
-      : "none";
+      : "lax";
 
   let secure = parseBooleanEnv(process.env.SESSION_COOKIE_SECURE, isProduction);
   if (sameSite === "none") {
@@ -185,7 +188,7 @@ function buildSavedBuildResponse(buildRow, partRows = []) {
     totalPrice: buildRow.price === null ? null : Number(buildRow.price),
     budget: null,
     compatible: Boolean(buildRow.validated),
-    performanceScore: null,
+    performanceScore: calculateBuildScore(parts),
     parts,
     createdAt: null,
   };
@@ -379,18 +382,15 @@ export function createSessionMiddleware(
       createTableIfMissing: true,
     });
 
+  const cookieConfig = getSessionCookieConfig();
+
   return session({
     name: SESSION_COOKIE_NAME,
     store,
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      sameSite: "none",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 8,
-    },
+    cookie: cookieConfig,
   });
 }
 
@@ -432,6 +432,7 @@ export function createApp({
 
   app.use(express.json());
   app.use("/api", priceTrackingRouter);
+  app.use("/api", chatRouter);
 
   app.get("/", (req, res) => {
     res.type("text").send("ok");
@@ -447,16 +448,48 @@ export function createApp({
 
   const PARTS_CATALOG = {
     cpu: [
-      { id: "cpu-1",  name: "AMD Ryzen 5 5600X",    price: 199, tdp: 65,  socket: "AM4",     img: "https://via.placeholder.com/56", alt: "Intel i5-12400F" },
-      { id: "cpu-2",  name: "AMD Ryzen 7 5800X",    price: 299, tdp: 105, socket: "AM4",     img: "https://via.placeholder.com/56", alt: "Intel i7-12700F" },
-      { id: "cpu-3",  name: "AMD Ryzen 9 5900X",    price: 399, tdp: 105, socket: "AM4",     img: "https://via.placeholder.com/56", alt: "Intel i9-12900K" },
-      { id: "cpu-4",  name: "AMD Ryzen 5 7600X",    price: 249, tdp: 105, socket: "AM5",     img: "https://via.placeholder.com/56", alt: "Intel i5-13600K" },
-      { id: "cpu-5",  name: "AMD Ryzen 7 7700X",    price: 349, tdp: 105, socket: "AM5",     img: "https://via.placeholder.com/56", alt: "Intel i7-13700K" },
-      { id: "cpu-6",  name: "Intel Core i5-12400F", price: 169, tdp: 65,  socket: "LGA1700", img: "https://via.placeholder.com/56", alt: "Ryzen 5 5600X" },
-      { id: "cpu-7",  name: "Intel Core i5-13600K", price: 279, tdp: 125, socket: "LGA1700", img: "https://via.placeholder.com/56", alt: "Ryzen 5 7600X" },
-      { id: "cpu-8",  name: "Intel Core i7-12700F", price: 289, tdp: 65,  socket: "LGA1700", img: "https://via.placeholder.com/56", alt: "Ryzen 7 5800X" },
-      { id: "cpu-9",  name: "Intel Core i7-13700K", price: 379, tdp: 125, socket: "LGA1700", img: "https://via.placeholder.com/56", alt: "Ryzen 7 7700X" },
-      { id: "cpu-10", name: "Intel Core i9-13900K", price: 549, tdp: 125, socket: "LGA1700", img: "https://via.placeholder.com/56", alt: "Ryzen 9 7950X" },
+      // AMD Ryzen 9000 Series (Zen 5) - AM5
+      { id: "cpu-1",  name: "AMD Ryzen 9 9950X",     price: 549, tdp: 170, socket: "AM5", microarchitecture: "Zen 5", core_count: 16, boost_clock: 5.7 },
+      { id: "cpu-2",  name: "AMD Ryzen 9 9900X",     price: 449, tdp: 120, socket: "AM5", microarchitecture: "Zen 5", core_count: 12, boost_clock: 5.6 },
+      { id: "cpu-3",  name: "AMD Ryzen 7 9800X3D",   price: 479, tdp: 120, socket: "AM5", microarchitecture: "Zen 5", core_count: 8,  boost_clock: 5.2 },
+      { id: "cpu-4",  name: "AMD Ryzen 7 9700X",     price: 265, tdp: 65,  socket: "AM5", microarchitecture: "Zen 5", core_count: 8,  boost_clock: 5.5 },
+      { id: "cpu-5",  name: "AMD Ryzen 5 9600X",     price: 179, tdp: 65,  socket: "AM5", microarchitecture: "Zen 5", core_count: 6,  boost_clock: 5.4 },
+      // AMD Ryzen 7000 Series (Zen 4) - AM5
+      { id: "cpu-6",  name: "AMD Ryzen 9 7950X3D",   price: 699, tdp: 120, socket: "AM5", microarchitecture: "Zen 4", core_count: 16, boost_clock: 5.7 },
+      { id: "cpu-7",  name: "AMD Ryzen 9 7950X",     price: 449, tdp: 170, socket: "AM5", microarchitecture: "Zen 4", core_count: 16, boost_clock: 5.7 },
+      { id: "cpu-8",  name: "AMD Ryzen 9 7900X",     price: 349, tdp: 170, socket: "AM5", microarchitecture: "Zen 4", core_count: 12, boost_clock: 5.6 },
+      { id: "cpu-9",  name: "AMD Ryzen 7 7800X3D",   price: 399, tdp: 120, socket: "AM5", microarchitecture: "Zen 4", core_count: 8,  boost_clock: 5.0 },
+      { id: "cpu-10", name: "AMD Ryzen 7 7700X",     price: 249, tdp: 105, socket: "AM5", microarchitecture: "Zen 4", core_count: 8,  boost_clock: 5.4 },
+      { id: "cpu-11", name: "AMD Ryzen 5 7600X",     price: 199, tdp: 105, socket: "AM5", microarchitecture: "Zen 4", core_count: 6,  boost_clock: 5.3 },
+      { id: "cpu-12", name: "AMD Ryzen 5 7600",      price: 179, tdp: 65,  socket: "AM5", microarchitecture: "Zen 4", core_count: 6,  boost_clock: 5.1 },
+      // AMD Ryzen 5000 Series (Zen 3) - AM4
+      { id: "cpu-13", name: "AMD Ryzen 9 5900X",     price: 249, tdp: 105, socket: "AM4", microarchitecture: "Zen 3", core_count: 12, boost_clock: 4.8 },
+      { id: "cpu-14", name: "AMD Ryzen 7 5800X3D",   price: 299, tdp: 105, socket: "AM4", microarchitecture: "Zen 3", core_count: 8,  boost_clock: 4.5 },
+      { id: "cpu-15", name: "AMD Ryzen 7 5800X",     price: 179, tdp: 105, socket: "AM4", microarchitecture: "Zen 3", core_count: 8,  boost_clock: 4.7 },
+      { id: "cpu-16", name: "AMD Ryzen 7 5700X",     price: 149, tdp: 65,  socket: "AM4", microarchitecture: "Zen 3", core_count: 8,  boost_clock: 4.6 },
+      { id: "cpu-17", name: "AMD Ryzen 5 5600X",     price: 139, tdp: 65,  socket: "AM4", microarchitecture: "Zen 3", core_count: 6,  boost_clock: 4.6 },
+      { id: "cpu-18", name: "AMD Ryzen 5 5600",      price: 119, tdp: 65,  socket: "AM4", microarchitecture: "Zen 3", core_count: 6,  boost_clock: 4.4 },
+      // Intel Core Ultra 200S (Arrow Lake Refresh) - LGA1851
+      { id: "cpu-19", name: "Intel Core Ultra 9 285K",   price: 589, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 24, boost_clock: 5.7 },
+      { id: "cpu-20", name: "Intel Core Ultra 7 270K",   price: 349, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 20, boost_clock: 5.5 },
+      { id: "cpu-21", name: "Intel Core Ultra 7 265K",   price: 299, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 20, boost_clock: 5.5 },
+      { id: "cpu-22", name: "Intel Core Ultra 5 250K",   price: 219, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 14, boost_clock: 5.2 },
+      { id: "cpu-23", name: "Intel Core Ultra 5 245K",   price: 199, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 14, boost_clock: 5.2 },
+      // Intel 14th Gen (Raptor Lake Refresh) - LGA1700
+      { id: "cpu-24", name: "Intel Core i9-14900K",  price: 449, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 24, boost_clock: 6.0 },
+      { id: "cpu-25", name: "Intel Core i7-14700K",  price: 319, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 20, boost_clock: 5.6 },
+      { id: "cpu-26", name: "Intel Core i5-14600K",  price: 259, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 14, boost_clock: 5.3 },
+      { id: "cpu-27", name: "Intel Core i5-14400F",  price: 149, tdp: 65,  socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 10, boost_clock: 4.7 },
+      // Intel 13th Gen (Raptor Lake) - LGA1700
+      { id: "cpu-28", name: "Intel Core i9-13900K",  price: 419, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 24, boost_clock: 5.8 },
+      { id: "cpu-29", name: "Intel Core i7-13700K",  price: 299, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 16, boost_clock: 5.4 },
+      { id: "cpu-30", name: "Intel Core i5-13600K",  price: 249, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 14, boost_clock: 5.1 },
+      { id: "cpu-31", name: "Intel Core i5-13400F",  price: 139, tdp: 65,  socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 10, boost_clock: 4.6 },
+      // Intel 12th Gen (Alder Lake) - LGA1700
+      { id: "cpu-32", name: "Intel Core i7-12700K",  price: 199, tdp: 125, socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 12, boost_clock: 5.0 },
+      { id: "cpu-33", name: "Intel Core i5-12600K",  price: 149, tdp: 125, socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 10, boost_clock: 4.9 },
+      { id: "cpu-34", name: "Intel Core i5-12400F",  price: 109, tdp: 65,  socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 6,  boost_clock: 4.4 },
+      { id: "cpu-35", name: "Intel Core i3-12100F",  price: 79,  tdp: 58,  socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 4,  boost_clock: 4.3 },
     ],
     gpu: [
       { id: "gpu-1",  name: "NVIDIA RTX 3060",        price: 329, tdp: 170, img: "https://via.placeholder.com/56", alt: "AMD RX 6600" },
@@ -989,6 +1022,122 @@ export function createApp({
       res.clearCookie(SESSION_COOKIE_NAME);
       return res.json({ ok: true });
     });
+  });
+
+  app.patch("/auth/email", requireAuth, async (req, res) => {
+    const { currentPassword, newEmail } = req.body ?? {};
+
+    if (!currentPassword || !newEmail) {
+      return res.status(400).json({ ok: false, error: "currentPassword and newEmail are required" });
+    }
+
+    const normalizedEmail = newEmail.toLowerCase().trim();
+
+    try {
+      const { rows } = await pool.query(
+        "SELECT users.uid, users.email, auth.password_hash FROM users JOIN auth ON auth.uid = users.uid WHERE users.uid = $1",
+        [req.session.userId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ ok: false, error: "User not found" });
+      }
+
+      const user = rows[0];
+      const passwordMatch = await bcrypt.compare(currentPassword, user.password_hash);
+
+      if (!passwordMatch) {
+        return res.status(401).json({ ok: false, error: "Incorrect password" });
+      }
+
+      if (normalizedEmail === user.email) {
+        return res.status(400).json({ ok: false, error: "New email is the same as current email" });
+      }
+
+      await pool.query("UPDATE users SET email = $1 WHERE uid = $2", [normalizedEmail, req.session.userId]);
+
+      return res.json({ ok: true, user: { id: Number(user.uid), email: normalizedEmail } });
+    } catch (e) {
+      if (e.code === "23505") {
+        return res.status(409).json({ ok: false, error: "Email already in use" });
+      }
+      console.error(e);
+      return res.status(500).json({ ok: false, error: "Server error" });
+    }
+  });
+
+  app.patch("/auth/password", requireAuth, async (req, res) => {
+    const { currentPassword, newPassword } = req.body ?? {};
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ ok: false, error: "currentPassword and newPassword are required" });
+    }
+
+    if (newPassword.length < 10) {
+      return res.status(400).json({ ok: false, error: "New password must be at least 10 characters" });
+    }
+
+    try {
+      const { rows } = await pool.query(
+        "SELECT auth.auth_id, auth.password_hash FROM auth WHERE auth.uid = $1",
+        [req.session.userId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ ok: false, error: "User not found" });
+      }
+
+      const authRow = rows[0];
+      const passwordMatch = await bcrypt.compare(currentPassword, authRow.password_hash);
+
+      if (!passwordMatch) {
+        return res.status(401).json({ ok: false, error: "Incorrect current password" });
+      }
+
+      const newHash = await bcrypt.hash(newPassword, 12);
+      await pool.query("UPDATE auth SET password_hash = $1 WHERE auth_id = $2", [newHash, authRow.auth_id]);
+
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ ok: false, error: "Server error" });
+    }
+  });
+
+  app.delete("/auth/account", requireAuth, async (req, res) => {
+    const { currentPassword } = req.body ?? {};
+
+    if (!currentPassword) {
+      return res.status(400).json({ ok: false, error: "currentPassword is required" });
+    }
+
+    try {
+      const { rows } = await pool.query(
+        "SELECT auth.auth_id, auth.password_hash FROM auth WHERE auth.uid = $1",
+        [req.session.userId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ ok: false, error: "User not found" });
+      }
+
+      const authRow = rows[0];
+      const passwordMatch = await bcrypt.compare(currentPassword, authRow.password_hash);
+
+      if (!passwordMatch) {
+        return res.status(401).json({ ok: false, error: "Incorrect password" });
+      }
+
+      await pool.query("DELETE FROM users WHERE uid = $1", [req.session.userId]);
+
+      req.session.destroy(() => {
+        res.clearCookie(SESSION_COOKIE_NAME);
+        return res.json({ ok: true });
+      });
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ ok: false, error: "Server error" });
+    }
   });
 
   app.get("/auth/logs", requireAuth, async (req, res) => {
