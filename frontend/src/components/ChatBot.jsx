@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { animate } from "animejs";
 import { streamChat } from "../services/chatApi";
 import "../styles/ChatBot.css";
 
@@ -9,12 +10,117 @@ const WELCOME_MESSAGE = {
 
 export default function ChatBot({ currentBuild }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [fabPos, setFabPos] = useState({ right: 28, bottom: 28 });
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(false);
+  const fabRef = useRef(null);
+  const windowRef = useRef(null);
+  const dragRef = useRef({ dragging: false, startY: 0, moved: false });
+
+  // Drag handlers for the FAB — y-axis only
+  function handlePointerDown(e) {
+    dragRef.current = {
+      dragging: true,
+      startY: e.clientY,
+      moved: false,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function handlePointerMove(e) {
+    if (!dragRef.current.dragging) return;
+
+    const dy = e.clientY - dragRef.current.startY;
+
+    // Only start moving after 5px threshold
+    if (!dragRef.current.moved && Math.abs(dy) < 5) return;
+    dragRef.current.moved = true;
+
+    setFabPos((prev) => ({
+      ...prev,
+      bottom: Math.max(8, Math.min(window.innerHeight - 62, prev.bottom - dy)),
+    }));
+
+    dragRef.current.startY = e.clientY;
+  }
+
+  function handlePointerUp() {
+    const wasDrag = dragRef.current.moved;
+    dragRef.current.dragging = false;
+
+    // Only toggle chat if it was a click, not a drag
+    if (!wasDrag) {
+      if (isOpen) {
+        handleClose();
+      } else {
+        setIsOpen(true);
+      }
+    }
+  }
+
+  // Close with animation
+  function handleClose() {
+    if (isClosing) return;
+    setIsClosing(true);
+
+    if (windowRef.current) {
+      animate(windowRef.current, {
+        opacity: [1, 0],
+        translateY: [0, 12],
+        scale: [1, 0.97],
+        duration: 250,
+        ease: 'in(2)',
+        onComplete: () => {
+          setIsOpen(false);
+          setIsClosing(false);
+        },
+      });
+    } else {
+      setIsOpen(false);
+      setIsClosing(false);
+    }
+  }
+
+  // Animate FAB on mount with a pulse + bounce
+  useEffect(() => {
+    if (fabRef.current) {
+      animate(fabRef.current, {
+        scale: [0, 1.15, 1],
+        rotate: ['-45deg', '0deg'],
+        duration: 800,
+        ease: 'out(3)',
+      });
+
+      // Subtle looping pulse glow
+      animate(fabRef.current, {
+        boxShadow: [
+          '0 4px 24px rgba(138, 43, 226, 0.5)',
+          '0 4px 36px rgba(138, 43, 226, 0.85)',
+          '0 4px 24px rgba(138, 43, 226, 0.5)',
+        ],
+        duration: 2000,
+        loop: true,
+        ease: 'inOut(2)',
+      });
+    }
+  }, []);
+
+  // Animate FAB on open/close toggle
+  useEffect(() => {
+    if (fabRef.current) {
+      animate(fabRef.current, {
+        rotate: isOpen ? '90deg' : '0deg',
+        scale: [0.85, 1],
+        duration: 300,
+        ease: 'out(3)',
+      });
+    }
+  }, [isOpen]);
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -93,8 +199,12 @@ export default function ChatBot({ currentBuild }) {
     <>
       {/* Floating toggle button */}
       <button
+        ref={fabRef}
         className="chatbot-fab"
-        onClick={() => setIsOpen((o) => !o)}
+        style={{ right: fabPos.right, bottom: fabPos.bottom }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
         aria-label={isOpen ? "Close chat assistant" : "Open chat assistant"}
       >
         {isOpen ? (
@@ -110,8 +220,14 @@ export default function ChatBot({ currentBuild }) {
       </button>
 
       {/* Chat window */}
-      {isOpen && (
-        <div className="chatbot-window" role="dialog" aria-label="PC Build Assistant">
+      {(isOpen || isClosing) && (
+        <div
+          ref={windowRef}
+          className="chatbot-window"
+          role="dialog"
+          aria-label="PC Build Assistant"
+          style={{ right: fabPos.right, bottom: fabPos.bottom + 66 }}
+        >
           <div className="chatbot-header">
             <div className="chatbot-header__info">
               <div className="chatbot-header__dot" aria-hidden="true" />

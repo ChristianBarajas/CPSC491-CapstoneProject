@@ -11,6 +11,7 @@ import Navbar from "./components/Navbar";
 import UxErrorBoundary from "./components/UxErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ChatBot from "./components/ChatBot";
+import PageTransition from "./components/PageTransition";
 import "./App.css";
 
 export default function App() {
@@ -21,18 +22,20 @@ export default function App() {
           <Navbar />
           <main className="main">
             <BuildProvider>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/picker" element={<PartPicker />} />
-                <Route path="/build" element={<Build />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/saved" element={<SavedBuild />} />
-                  <Route path="/account" element={<Account />} />
-                </Route>
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+              <PageTransition>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/picker" element={<PartPicker />} />
+                  <Route path="/build" element={<Build />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/saved" element={<SavedBuild />} />
+                    <Route path="/account" element={<Account />} />
+                  </Route>
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </PageTransition>
               <ChatBot />
             </BuildProvider>
           </main>
