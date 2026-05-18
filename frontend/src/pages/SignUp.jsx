@@ -8,13 +8,11 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [email, setEmail] = useState("");
-  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setError("");
 
     if (password !== confirmPassword) {
@@ -25,7 +23,7 @@ export default function SignUp() {
     setIsSubmitting(true);
 
     try {
-      await register(email, password, { marketingOptIn });
+      await register(email, password);
       window.location.replace("/");
     } catch (err) {
       setError(err.message || "Unable to sign up.");
@@ -72,15 +70,6 @@ export default function SignUp() {
           minLength={10}
           required
         />
-        <label className="signup-checkbox" htmlFor="marketingOptIn">
-          <input
-            type="checkbox"
-            id="marketingOptIn"
-            checked={marketingOptIn}
-            onChange={(e) => setMarketingOptIn(e.target.checked)}
-          />
-          <span>Send me offers and promotions by email.</span>
-        </label>
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating account..." : "Sign Up"}
         </button>

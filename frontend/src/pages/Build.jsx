@@ -6,12 +6,31 @@ import { getCurrentUser } from "../services/authApi";
 import { createSavedBuild } from "../services/buildApi";
 import { saveBuildForUser } from "../services/savedBuilds";
 import pcImage from "../assets/pc-image.png";
+import processorImg from "../assets/images/processor.png";
+import graphicscardImg from "../assets/images/graphicscard.png";
+import ramImg from "../assets/images/ram.png";
+import motherboardImg from "../assets/images/motherboard.png";
+import powersupplyImg from "../assets/images/powersupply.png";
 
-function PartCard({ part }) {
+const CATEGORY_FALLBACK = {
+  cpu:    processorImg,
+  gpu:    graphicscardImg,
+  ram:    ramImg,
+  mobo:   motherboardImg,
+  psu:    powersupplyImg,
+};
+
+function PartCard({ part, category }) {
+  const fallback = CATEGORY_FALLBACK[category] ?? processorImg;
   return (
     <div className={`partCard partCard--${part.pos}`}>
       <div className="partCard__imgWrap">
-        <img className="partCard__img" src={part.img} alt={part.name} />
+        <img
+          className="partCard__img"
+          src={part.img || fallback}
+          alt={part.name}
+          onError={(e) => { e.target.src = fallback; }}
+        />
       </div>
       <div className="partCard__text">
         <div className="partCard__titleRow">
@@ -110,11 +129,11 @@ export default function Build() {
           />
         </div>
 
-        {parts.cpu  && <PartCard part={parts.cpu} />}
-        {parts.gpu  && <PartCard part={parts.gpu} />}
-        {parts.ram  && <PartCard part={parts.ram} />}
-        {parts.mobo && <PartCard part={parts.mobo} />}
-        {parts.psu  && <PartCard part={parts.psu} />}
+        {parts.cpu  && <PartCard part={parts.cpu}  category="cpu" />}
+        {parts.gpu  && <PartCard part={parts.gpu}  category="gpu" />}
+        {parts.ram  && <PartCard part={parts.ram}  category="ram" />}
+        {parts.mobo && <PartCard part={parts.mobo} category="mobo" />}
+        {parts.psu  && <PartCard part={parts.psu}  category="psu" />}
       </main>
     </div>
   );

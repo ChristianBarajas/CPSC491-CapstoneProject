@@ -4,7 +4,8 @@ import pg from "pg";
 import bcrypt from "bcrypt";
 import connectPgSimple from "connect-pg-simple";
 import dotenv from "dotenv";
-import { pathToFileURL } from "url";
+import { pathToFileURL, fileURLToPath } from "url";
+import path from "path";
 import { priceTrackingRouter } from "./routes/priceTracking.js";
 import { chatRouter } from "./routes/chat.js";
 import fetch from "node-fetch";
@@ -431,6 +432,12 @@ export function createApp({
   applyCors(app);
 
   app.use(express.json());
+
+  // Serve static images from backend/data/images
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  app.use("/images", express.static(path.join(__dirname, "data", "images")));
+
   app.use("/api", priceTrackingRouter);
   app.use("/api", chatRouter);
 
@@ -449,95 +456,95 @@ export function createApp({
   const PARTS_CATALOG = {
     cpu: [
       // AMD Ryzen 9000 Series (Zen 5) - AM5
-      { id: "cpu-1",  name: "AMD Ryzen 9 9950X",     price: 549, tdp: 170, socket: "AM5", microarchitecture: "Zen 5", core_count: 16, boost_clock: 5.7 },
-      { id: "cpu-2",  name: "AMD Ryzen 9 9900X",     price: 449, tdp: 120, socket: "AM5", microarchitecture: "Zen 5", core_count: 12, boost_clock: 5.6 },
-      { id: "cpu-3",  name: "AMD Ryzen 7 9800X3D",   price: 479, tdp: 120, socket: "AM5", microarchitecture: "Zen 5", core_count: 8,  boost_clock: 5.2 },
-      { id: "cpu-4",  name: "AMD Ryzen 7 9700X",     price: 265, tdp: 65,  socket: "AM5", microarchitecture: "Zen 5", core_count: 8,  boost_clock: 5.5 },
-      { id: "cpu-5",  name: "AMD Ryzen 5 9600X",     price: 179, tdp: 65,  socket: "AM5", microarchitecture: "Zen 5", core_count: 6,  boost_clock: 5.4 },
+      { id: "cpu-1",  name: "AMD Ryzen 9 9950X",     price: 549, tdp: 170, socket: "AM5", microarchitecture: "Zen 5", core_count: 16, boost_clock: 5.7, img: "/images/processor.png" },
+      { id: "cpu-2",  name: "AMD Ryzen 9 9900X",     price: 449, tdp: 120, socket: "AM5", microarchitecture: "Zen 5", core_count: 12, boost_clock: 5.6, img: "/images/processor.png" },
+      { id: "cpu-3",  name: "AMD Ryzen 7 9800X3D",   price: 479, tdp: 120, socket: "AM5", microarchitecture: "Zen 5", core_count: 8,  boost_clock: 5.2, img: "/images/processor.png" },
+      { id: "cpu-4",  name: "AMD Ryzen 7 9700X",     price: 265, tdp: 65,  socket: "AM5", microarchitecture: "Zen 5", core_count: 8,  boost_clock: 5.5, img: "/images/processor.png" },
+      { id: "cpu-5",  name: "AMD Ryzen 5 9600X",     price: 179, tdp: 65,  socket: "AM5", microarchitecture: "Zen 5", core_count: 6,  boost_clock: 5.4, img: "/images/processor.png" },
       // AMD Ryzen 7000 Series (Zen 4) - AM5
-      { id: "cpu-6",  name: "AMD Ryzen 9 7950X3D",   price: 699, tdp: 120, socket: "AM5", microarchitecture: "Zen 4", core_count: 16, boost_clock: 5.7 },
-      { id: "cpu-7",  name: "AMD Ryzen 9 7950X",     price: 449, tdp: 170, socket: "AM5", microarchitecture: "Zen 4", core_count: 16, boost_clock: 5.7 },
-      { id: "cpu-8",  name: "AMD Ryzen 9 7900X",     price: 349, tdp: 170, socket: "AM5", microarchitecture: "Zen 4", core_count: 12, boost_clock: 5.6 },
-      { id: "cpu-9",  name: "AMD Ryzen 7 7800X3D",   price: 399, tdp: 120, socket: "AM5", microarchitecture: "Zen 4", core_count: 8,  boost_clock: 5.0 },
-      { id: "cpu-10", name: "AMD Ryzen 7 7700X",     price: 249, tdp: 105, socket: "AM5", microarchitecture: "Zen 4", core_count: 8,  boost_clock: 5.4 },
-      { id: "cpu-11", name: "AMD Ryzen 5 7600X",     price: 199, tdp: 105, socket: "AM5", microarchitecture: "Zen 4", core_count: 6,  boost_clock: 5.3 },
-      { id: "cpu-12", name: "AMD Ryzen 5 7600",      price: 179, tdp: 65,  socket: "AM5", microarchitecture: "Zen 4", core_count: 6,  boost_clock: 5.1 },
+      { id: "cpu-6",  name: "AMD Ryzen 9 7950X3D",   price: 699, tdp: 120, socket: "AM5", microarchitecture: "Zen 4", core_count: 16, boost_clock: 5.7, img: "/images/processor.png" },
+      { id: "cpu-7",  name: "AMD Ryzen 9 7950X",     price: 449, tdp: 170, socket: "AM5", microarchitecture: "Zen 4", core_count: 16, boost_clock: 5.7, img: "/images/processor.png" },
+      { id: "cpu-8",  name: "AMD Ryzen 9 7900X",     price: 349, tdp: 170, socket: "AM5", microarchitecture: "Zen 4", core_count: 12, boost_clock: 5.6, img: "/images/processor.png" },
+      { id: "cpu-9",  name: "AMD Ryzen 7 7800X3D",   price: 399, tdp: 120, socket: "AM5", microarchitecture: "Zen 4", core_count: 8,  boost_clock: 5.0, img: "/images/processor.png" },
+      { id: "cpu-10", name: "AMD Ryzen 7 7700X",     price: 249, tdp: 105, socket: "AM5", microarchitecture: "Zen 4", core_count: 8,  boost_clock: 5.4, img: "/images/processor.png" },
+      { id: "cpu-11", name: "AMD Ryzen 5 7600X",     price: 199, tdp: 105, socket: "AM5", microarchitecture: "Zen 4", core_count: 6,  boost_clock: 5.3, img: "/images/processor.png" },
+      { id: "cpu-12", name: "AMD Ryzen 5 7600",      price: 179, tdp: 65,  socket: "AM5", microarchitecture: "Zen 4", core_count: 6,  boost_clock: 5.1, img: "/images/processor.png" },
       // AMD Ryzen 5000 Series (Zen 3) - AM4
-      { id: "cpu-13", name: "AMD Ryzen 9 5900X",     price: 249, tdp: 105, socket: "AM4", microarchitecture: "Zen 3", core_count: 12, boost_clock: 4.8 },
-      { id: "cpu-14", name: "AMD Ryzen 7 5800X3D",   price: 299, tdp: 105, socket: "AM4", microarchitecture: "Zen 3", core_count: 8,  boost_clock: 4.5 },
-      { id: "cpu-15", name: "AMD Ryzen 7 5800X",     price: 179, tdp: 105, socket: "AM4", microarchitecture: "Zen 3", core_count: 8,  boost_clock: 4.7 },
-      { id: "cpu-16", name: "AMD Ryzen 7 5700X",     price: 149, tdp: 65,  socket: "AM4", microarchitecture: "Zen 3", core_count: 8,  boost_clock: 4.6 },
-      { id: "cpu-17", name: "AMD Ryzen 5 5600X",     price: 139, tdp: 65,  socket: "AM4", microarchitecture: "Zen 3", core_count: 6,  boost_clock: 4.6 },
-      { id: "cpu-18", name: "AMD Ryzen 5 5600",      price: 119, tdp: 65,  socket: "AM4", microarchitecture: "Zen 3", core_count: 6,  boost_clock: 4.4 },
+      { id: "cpu-13", name: "AMD Ryzen 9 5900X",     price: 249, tdp: 105, socket: "AM4", microarchitecture: "Zen 3", core_count: 12, boost_clock: 4.8, img: "/images/processor.png" },
+      { id: "cpu-14", name: "AMD Ryzen 7 5800X3D",   price: 299, tdp: 105, socket: "AM4", microarchitecture: "Zen 3", core_count: 8,  boost_clock: 4.5, img: "/images/processor.png" },
+      { id: "cpu-15", name: "AMD Ryzen 7 5800X",     price: 179, tdp: 105, socket: "AM4", microarchitecture: "Zen 3", core_count: 8,  boost_clock: 4.7, img: "/images/processor.png" },
+      { id: "cpu-16", name: "AMD Ryzen 7 5700X",     price: 149, tdp: 65,  socket: "AM4", microarchitecture: "Zen 3", core_count: 8,  boost_clock: 4.6, img: "/images/processor.png" },
+      { id: "cpu-17", name: "AMD Ryzen 5 5600X",     price: 139, tdp: 65,  socket: "AM4", microarchitecture: "Zen 3", core_count: 6,  boost_clock: 4.6, img: "/images/processor.png" },
+      { id: "cpu-18", name: "AMD Ryzen 5 5600",      price: 119, tdp: 65,  socket: "AM4", microarchitecture: "Zen 3", core_count: 6,  boost_clock: 4.4, img: "/images/processor.png" },
       // Intel Core Ultra 200S (Arrow Lake Refresh) - LGA1851
-      { id: "cpu-19", name: "Intel Core Ultra 9 285K",   price: 589, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 24, boost_clock: 5.7 },
-      { id: "cpu-20", name: "Intel Core Ultra 7 270K",   price: 349, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 20, boost_clock: 5.5 },
-      { id: "cpu-21", name: "Intel Core Ultra 7 265K",   price: 299, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 20, boost_clock: 5.5 },
-      { id: "cpu-22", name: "Intel Core Ultra 5 250K",   price: 219, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 14, boost_clock: 5.2 },
-      { id: "cpu-23", name: "Intel Core Ultra 5 245K",   price: 199, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 14, boost_clock: 5.2 },
+      { id: "cpu-19", name: "Intel Core Ultra 9 285K",   price: 589, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 24, boost_clock: 5.7, img: "/images/processor.png" },
+      { id: "cpu-20", name: "Intel Core Ultra 7 270K",   price: 349, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 20, boost_clock: 5.5, img: "/images/processor.png" },
+      { id: "cpu-21", name: "Intel Core Ultra 7 265K",   price: 299, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 20, boost_clock: 5.5, img: "/images/processor.png" },
+      { id: "cpu-22", name: "Intel Core Ultra 5 250K",   price: 219, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 14, boost_clock: 5.2, img: "/images/processor.png" },
+      { id: "cpu-23", name: "Intel Core Ultra 5 245K",   price: 199, tdp: 125, socket: "LGA1851", microarchitecture: "Arrow Lake", core_count: 14, boost_clock: 5.2, img: "/images/processor.png" },
       // Intel 14th Gen (Raptor Lake Refresh) - LGA1700
-      { id: "cpu-24", name: "Intel Core i9-14900K",  price: 449, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 24, boost_clock: 6.0 },
-      { id: "cpu-25", name: "Intel Core i7-14700K",  price: 319, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 20, boost_clock: 5.6 },
-      { id: "cpu-26", name: "Intel Core i5-14600K",  price: 259, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 14, boost_clock: 5.3 },
-      { id: "cpu-27", name: "Intel Core i5-14400F",  price: 149, tdp: 65,  socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 10, boost_clock: 4.7 },
+      { id: "cpu-24", name: "Intel Core i9-14900K",  price: 449, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 24, boost_clock: 6.0, img: "/images/processor.png" },
+      { id: "cpu-25", name: "Intel Core i7-14700K",  price: 319, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 20, boost_clock: 5.6, img: "/images/processor.png" },
+      { id: "cpu-26", name: "Intel Core i5-14600K",  price: 259, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 14, boost_clock: 5.3, img: "/images/processor.png" },
+      { id: "cpu-27", name: "Intel Core i5-14400F",  price: 149, tdp: 65,  socket: "LGA1700", microarchitecture: "Raptor Lake Refresh", core_count: 10, boost_clock: 4.7, img: "/images/processor.png" },
       // Intel 13th Gen (Raptor Lake) - LGA1700
-      { id: "cpu-28", name: "Intel Core i9-13900K",  price: 419, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 24, boost_clock: 5.8 },
-      { id: "cpu-29", name: "Intel Core i7-13700K",  price: 299, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 16, boost_clock: 5.4 },
-      { id: "cpu-30", name: "Intel Core i5-13600K",  price: 249, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 14, boost_clock: 5.1 },
-      { id: "cpu-31", name: "Intel Core i5-13400F",  price: 139, tdp: 65,  socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 10, boost_clock: 4.6 },
+      { id: "cpu-28", name: "Intel Core i9-13900K",  price: 419, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 24, boost_clock: 5.8, img: "/images/processor.png" },
+      { id: "cpu-29", name: "Intel Core i7-13700K",  price: 299, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 16, boost_clock: 5.4, img: "/images/processor.png" },
+      { id: "cpu-30", name: "Intel Core i5-13600K",  price: 249, tdp: 125, socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 14, boost_clock: 5.1, img: "/images/processor.png" },
+      { id: "cpu-31", name: "Intel Core i5-13400F",  price: 139, tdp: 65,  socket: "LGA1700", microarchitecture: "Raptor Lake", core_count: 10, boost_clock: 4.6, img: "/images/processor.png" },
       // Intel 12th Gen (Alder Lake) - LGA1700
-      { id: "cpu-32", name: "Intel Core i7-12700K",  price: 199, tdp: 125, socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 12, boost_clock: 5.0 },
-      { id: "cpu-33", name: "Intel Core i5-12600K",  price: 149, tdp: 125, socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 10, boost_clock: 4.9 },
-      { id: "cpu-34", name: "Intel Core i5-12400F",  price: 109, tdp: 65,  socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 6,  boost_clock: 4.4 },
-      { id: "cpu-35", name: "Intel Core i3-12100F",  price: 79,  tdp: 58,  socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 4,  boost_clock: 4.3 },
+      { id: "cpu-32", name: "Intel Core i7-12700K",  price: 199, tdp: 125, socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 12, boost_clock: 5.0, img: "/images/processor.png" },
+      { id: "cpu-33", name: "Intel Core i5-12600K",  price: 149, tdp: 125, socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 10, boost_clock: 4.9, img: "/images/processor.png" },
+      { id: "cpu-34", name: "Intel Core i5-12400F",  price: 109, tdp: 65,  socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 6,  boost_clock: 4.4, img: "/images/processor.png" },
+      { id: "cpu-35", name: "Intel Core i3-12100F",  price: 79,  tdp: 58,  socket: "LGA1700", microarchitecture: "Alder Lake", core_count: 4,  boost_clock: 4.3, img: "/images/processor.png" },
     ],
     gpu: [
-      { id: "gpu-1",  name: "NVIDIA RTX 3060",        price: 329, tdp: 170, img: "https://via.placeholder.com/56", alt: "AMD RX 6600" },
-      { id: "gpu-2",  name: "NVIDIA RTX 3060 Ti",     price: 399, tdp: 200, img: "https://via.placeholder.com/56", alt: "AMD RX 6700 XT" },
-      { id: "gpu-3",  name: "NVIDIA RTX 3070",        price: 499, tdp: 220, img: "https://via.placeholder.com/56", alt: "AMD RX 6800" },
-      { id: "gpu-4",  name: "NVIDIA RTX 3080",        price: 699, tdp: 320, img: "https://via.placeholder.com/56", alt: "AMD RX 6800 XT" },
-      { id: "gpu-5",  name: "NVIDIA RTX 4060",        price: 299, tdp: 115, img: "https://via.placeholder.com/56", alt: "AMD RX 7600" },
-      { id: "gpu-6",  name: "NVIDIA RTX 4070",        price: 599, tdp: 200, img: "https://via.placeholder.com/56", alt: "AMD RX 7800 XT" },
-      { id: "gpu-7",  name: "AMD Radeon RX 6600",     price: 249, tdp: 132, img: "https://via.placeholder.com/56", alt: "RTX 3060" },
-      { id: "gpu-8",  name: "AMD Radeon RX 6700 XT",  price: 349, tdp: 230, img: "https://via.placeholder.com/56", alt: "RTX 3060 Ti" },
-      { id: "gpu-9",  name: "AMD Radeon RX 6800 XT",  price: 549, tdp: 300, img: "https://via.placeholder.com/56", alt: "RTX 3080" },
-      { id: "gpu-10", name: "AMD Radeon RX 7900 XTX", price: 949, tdp: 355, img: "https://via.placeholder.com/56", alt: "RTX 4080" },
+      { id: "gpu-1",  name: "NVIDIA RTX 3060",        price: 329, tdp: 170, img: "/images/graphicscard.png", alt: "NVIDIA RTX 3060" },
+      { id: "gpu-2",  name: "NVIDIA RTX 3060 Ti",     price: 399, tdp: 200, img: "/images/graphicscard.png", alt: "NVIDIA RTX 3060 Ti" },
+      { id: "gpu-3",  name: "NVIDIA RTX 3070",        price: 499, tdp: 220, img: "/images/graphicscard.png", alt: "NVIDIA RTX 3070" },
+      { id: "gpu-4",  name: "NVIDIA RTX 3080",        price: 699, tdp: 320, img: "/images/graphicscard.png", alt: "NVIDIA RTX 3080" },
+      { id: "gpu-5",  name: "NVIDIA RTX 4060",        price: 299, tdp: 115, img: "/images/graphicscard.png", alt: "NVIDIA RTX 4060" },
+      { id: "gpu-6",  name: "NVIDIA RTX 4070",        price: 599, tdp: 200, img: "/images/graphicscard.png", alt: "NVIDIA RTX 4070" },
+      { id: "gpu-7",  name: "AMD Radeon RX 6600",     price: 249, tdp: 132, img: "/images/graphicscard.png", alt: "AMD Radeon RX 6600" },
+      { id: "gpu-8",  name: "AMD Radeon RX 6700 XT",  price: 349, tdp: 230, img: "/images/graphicscard.png", alt: "AMD Radeon RX 6700 XT" },
+      { id: "gpu-9",  name: "AMD Radeon RX 6800 XT",  price: 549, tdp: 300, img: "/images/graphicscard.png", alt: "AMD Radeon RX 6800 XT" },
+      { id: "gpu-10", name: "AMD Radeon RX 7900 XTX", price: 949, tdp: 355, img: "/images/graphicscard.png", alt: "AMD Radeon RX 7900 XTX" },
     ],
     ram: [
-      { id: "ram-1", name: "Corsair Vengeance 16GB DDR4-3200", price: 45,  type: "DDR4", img: "https://via.placeholder.com/56", alt: "G.Skill Ripjaws 16GB DDR4" },
-      { id: "ram-2", name: "G.Skill Ripjaws 16GB DDR4-3600",  price: 55,  type: "DDR4", img: "https://via.placeholder.com/56", alt: "Corsair Vengeance 16GB DDR4" },
-      { id: "ram-3", name: "Kingston Fury 32GB DDR4-3200",    price: 79,  type: "DDR4", img: "https://via.placeholder.com/56", alt: "Corsair Vengeance 32GB DDR4" },
-      { id: "ram-4", name: "Corsair Vengeance 32GB DDR4-3600",price: 95,  type: "DDR4", img: "https://via.placeholder.com/56", alt: "G.Skill Ripjaws 32GB DDR4" },
-      { id: "ram-5", name: "G.Skill Trident 64GB DDR4-3600",  price: 159, type: "DDR4", img: "https://via.placeholder.com/56", alt: "Corsair Dominator 64GB DDR4" },
-      { id: "ram-6", name: "Corsair Vengeance 16GB DDR5-4800",price: 75,  type: "DDR5", img: "https://via.placeholder.com/56", alt: "Kingston Fury 16GB DDR5" },
-      { id: "ram-7", name: "G.Skill Trident 32GB DDR5-6000",  price: 119, type: "DDR5", img: "https://via.placeholder.com/56", alt: "Corsair Dominator 32GB DDR5" },
-      { id: "ram-8", name: "Kingston Fury 32GB DDR5-5200",    price: 109, type: "DDR5", img: "https://via.placeholder.com/56", alt: "G.Skill Trident 32GB DDR5" },
-      { id: "ram-9", name: "Corsair Dominator 64GB DDR5-5600",price: 229, type: "DDR5", img: "https://via.placeholder.com/56", alt: "G.Skill Trident 64GB DDR5" },
+      { id: "ram-1", name: "Corsair Vengeance 16GB DDR4-3200", price: 45,  type: "DDR4", img: "/images/ram.png", alt: "Corsair Vengeance 16GB DDR4-3200" },
+      { id: "ram-2", name: "G.Skill Ripjaws 16GB DDR4-3600",  price: 55,  type: "DDR4", img: "/images/ram.png", alt: "G.Skill Ripjaws 16GB DDR4-3600" },
+      { id: "ram-3", name: "Kingston Fury 32GB DDR4-3200",    price: 79,  type: "DDR4", img: "/images/ram.png", alt: "Kingston Fury 32GB DDR4-3200" },
+      { id: "ram-4", name: "Corsair Vengeance 32GB DDR4-3600",price: 95,  type: "DDR4", img: "/images/ram.png", alt: "Corsair Vengeance 32GB DDR4-3600" },
+      { id: "ram-5", name: "G.Skill Trident 64GB DDR4-3600",  price: 159, type: "DDR4", img: "/images/ram.png", alt: "G.Skill Trident 64GB DDR4-3600" },
+      { id: "ram-6", name: "Corsair Vengeance 16GB DDR5-4800",price: 75,  type: "DDR5", img: "/images/ram.png", alt: "Corsair Vengeance 16GB DDR5-4800" },
+      { id: "ram-7", name: "G.Skill Trident 32GB DDR5-6000",  price: 119, type: "DDR5", img: "/images/ram.png", alt: "G.Skill Trident 32GB DDR5-6000" },
+      { id: "ram-8", name: "Kingston Fury 32GB DDR5-5200",    price: 109, type: "DDR5", img: "/images/ram.png", alt: "Kingston Fury 32GB DDR5-5200" },
+      { id: "ram-9", name: "Corsair Dominator 64GB DDR5-5600",price: 229, type: "DDR5", img: "/images/ram.png", alt: "Corsair Dominator 64GB DDR5-5600" },
     ],
     mobo: [
-      { id: "mobo-1",  name: "MSI B550-A Pro",             price: 129, socket: "AM4",     ramType: "DDR4", img: "https://via.placeholder.com/56", alt: "ASUS TUF B550-Plus" },
-      { id: "mobo-2",  name: "ASUS TUF B550-Plus",         price: 149, socket: "AM4",     ramType: "DDR4", img: "https://via.placeholder.com/56", alt: "MSI B550-A Pro" },
-      { id: "mobo-3",  name: "ASUS ROG STRIX B550-F",      price: 180, socket: "AM4",     ramType: "DDR4", img: "https://via.placeholder.com/56", alt: "MSI B550 Tomahawk" },
-      { id: "mobo-4",  name: "MSI B550 Tomahawk",          price: 159, socket: "AM4",     ramType: "DDR4", img: "https://via.placeholder.com/56", alt: "Gigabyte B550 Aorus" },
-      { id: "mobo-5",  name: "ASUS ROG Crosshair X670E",   price: 349, socket: "AM5",     ramType: "DDR5", img: "https://via.placeholder.com/56", alt: "MSI X670E Tomahawk" },
-      { id: "mobo-6",  name: "MSI X670E Tomahawk",         price: 299, socket: "AM5",     ramType: "DDR5", img: "https://via.placeholder.com/56", alt: "ASUS ROG Crosshair X670E" },
-      { id: "mobo-7",  name: "Gigabyte B650 Aorus Elite",  price: 199, socket: "AM5",     ramType: "DDR5", img: "https://via.placeholder.com/56", alt: "MSI B650 Tomahawk" },
-      { id: "mobo-8",  name: "ASUS Prime Z690-A",          price: 219, socket: "LGA1700", ramType: "DDR4", img: "https://via.placeholder.com/56", alt: "MSI Z690-A Pro" },
-      { id: "mobo-9",  name: "MSI Z690-A Pro",             price: 189, socket: "LGA1700", ramType: "DDR4", img: "https://via.placeholder.com/56", alt: "ASUS Prime Z690-A" },
-      { id: "mobo-10", name: "ASUS ROG Strix Z790-E",      price: 399, socket: "LGA1700", ramType: "DDR5", img: "https://via.placeholder.com/56", alt: "MSI Z790 Edge" },
-      { id: "mobo-11", name: "MSI Z790 Edge",              price: 329, socket: "LGA1700", ramType: "DDR5", img: "https://via.placeholder.com/56", alt: "ASUS ROG Strix Z790-E" },
+      { id: "mobo-1",  name: "MSI B550-A Pro",             price: 129, socket: "AM4",     ramType: "DDR4", img: "/images/motherboard.png", alt: "MSI B550-A Pro" },
+      { id: "mobo-2",  name: "ASUS TUF B550-Plus",         price: 149, socket: "AM4",     ramType: "DDR4", img: "/images/motherboard.png", alt: "ASUS TUF B550-Plus" },
+      { id: "mobo-3",  name: "ASUS ROG STRIX B550-F",      price: 180, socket: "AM4",     ramType: "DDR4", img: "/images/motherboard.png", alt: "ASUS ROG STRIX B550-F" },
+      { id: "mobo-4",  name: "MSI B550 Tomahawk",          price: 159, socket: "AM4",     ramType: "DDR4", img: "/images/motherboard.png", alt: "MSI B550 Tomahawk" },
+      { id: "mobo-5",  name: "ASUS ROG Crosshair X670E",   price: 349, socket: "AM5",     ramType: "DDR5", img: "/images/motherboard.png", alt: "ASUS ROG Crosshair X670E" },
+      { id: "mobo-6",  name: "MSI X670E Tomahawk",         price: 299, socket: "AM5",     ramType: "DDR5", img: "/images/motherboard.png", alt: "MSI X670E Tomahawk" },
+      { id: "mobo-7",  name: "Gigabyte B650 Aorus Elite",  price: 199, socket: "AM5",     ramType: "DDR5", img: "/images/motherboard.png", alt: "Gigabyte B650 Aorus Elite" },
+      { id: "mobo-8",  name: "ASUS Prime Z690-A",          price: 219, socket: "LGA1700", ramType: "DDR4", img: "/images/motherboard.png", alt: "ASUS Prime Z690-A" },
+      { id: "mobo-9",  name: "MSI Z690-A Pro",             price: 189, socket: "LGA1700", ramType: "DDR4", img: "/images/motherboard.png", alt: "MSI Z690-A Pro" },
+      { id: "mobo-10", name: "ASUS ROG Strix Z790-E",      price: 399, socket: "LGA1700", ramType: "DDR5", img: "/images/motherboard.png", alt: "ASUS ROG Strix Z790-E" },
+      { id: "mobo-11", name: "MSI Z790 Edge",              price: 329, socket: "LGA1700", ramType: "DDR5", img: "/images/motherboard.png", alt: "MSI Z790 Edge" },
     ],
     psu: [
-      { id: "psu-1",  name: "EVGA 500W Bronze",          price: 49,  wattage: 500,  img: "https://via.placeholder.com/56", alt: "Corsair CV550" },
-      { id: "psu-2",  name: "Corsair CV550",             price: 59,  wattage: 550,  img: "https://via.placeholder.com/56", alt: "EVGA 500W Bronze" },
-      { id: "psu-3",  name: "Corsair CX650M",            price: 79,  wattage: 650,  img: "https://via.placeholder.com/56", alt: "EVGA 650W Gold" },
-      { id: "psu-4",  name: "EVGA 650W Gold",            price: 89,  wattage: 650,  img: "https://via.placeholder.com/56", alt: "Corsair CX650M" },
-      { id: "psu-5",  name: "Seasonic Focus GX-750",     price: 129, wattage: 750,  img: "https://via.placeholder.com/56", alt: "Corsair RM750x" },
-      { id: "psu-6",  name: "Corsair RM750x",            price: 119, wattage: 750,  img: "https://via.placeholder.com/56", alt: "Seasonic Focus GX-750" },
-      { id: "psu-7",  name: "be quiet! Pure Power 850W", price: 139, wattage: 850,  img: "https://via.placeholder.com/56", alt: "Corsair RM850x" },
-      { id: "psu-8",  name: "Corsair RM850x",            price: 149, wattage: 850,  img: "https://via.placeholder.com/56", alt: "be quiet! Pure Power 850W" },
-      { id: "psu-9",  name: "Seasonic Focus GX-1000",    price: 189, wattage: 1000, img: "https://via.placeholder.com/56", alt: "Corsair HX1000" },
-      { id: "psu-10", name: "Corsair HX1000",            price: 199, wattage: 1000, img: "https://via.placeholder.com/56", alt: "Seasonic Focus GX-1000" },
+      { id: "psu-1",  name: "EVGA 500W Bronze",          price: 49,  wattage: 500,  img: "/images/powersupply.png", alt: "EVGA 500W Bronze" },
+      { id: "psu-2",  name: "Corsair CV550",             price: 59,  wattage: 550,  img: "/images/powersupply.png", alt: "Corsair CV550" },
+      { id: "psu-3",  name: "Corsair CX650M",            price: 79,  wattage: 650,  img: "/images/powersupply.png", alt: "Corsair CX650M" },
+      { id: "psu-4",  name: "EVGA 650W Gold",            price: 89,  wattage: 650,  img: "/images/powersupply.png", alt: "EVGA 650W Gold" },
+      { id: "psu-5",  name: "Seasonic Focus GX-750",     price: 129, wattage: 750,  img: "/images/powersupply.png", alt: "Seasonic Focus GX-750" },
+      { id: "psu-6",  name: "Corsair RM750x",            price: 119, wattage: 750,  img: "/images/powersupply.png", alt: "Corsair RM750x" },
+      { id: "psu-7",  name: "be quiet! Pure Power 850W", price: 139, wattage: 850,  img: "/images/powersupply.png", alt: "be quiet! Pure Power 850W" },
+      { id: "psu-8",  name: "Corsair RM850x",            price: 149, wattage: 850,  img: "/images/powersupply.png", alt: "Corsair RM850x" },
+      { id: "psu-9",  name: "Seasonic Focus GX-1000",    price: 189, wattage: 1000, img: "/images/powersupply.png", alt: "Seasonic Focus GX-1000" },
+      { id: "psu-10", name: "Corsair HX1000",            price: 199, wattage: 1000, img: "/images/powersupply.png", alt: "Corsair HX1000" },
     ],
   };
 
@@ -577,7 +584,16 @@ export function createApp({
   }
 
   app.get("/api/parts", (req, res) => {
-    return res.json({ ok: true, parts: PARTS_CATALOG });
+    // Prepend the backend origin to relative image paths
+    const origin = `${req.protocol}://${req.get("host")}`;
+    const partsWithImages = {};
+    for (const [cat, items] of Object.entries(PARTS_CATALOG)) {
+      partsWithImages[cat] = items.map(p => ({
+        ...p,
+        img: p.img?.startsWith("/") ? `${origin}${p.img}` : p.img,
+      }));
+    }
+    return res.json({ ok: true, parts: partsWithImages });
   });
 
   app.post("/api/recommend", (req, res) => {

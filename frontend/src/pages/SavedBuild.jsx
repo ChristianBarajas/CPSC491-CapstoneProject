@@ -8,6 +8,70 @@ import {
 } from "../services/savedBuilds";
 import "../styles/SavedBuild.css";
 
+// CPU architecture scores for client-side performance calculation
+const CPU_ARCH_SCORES = {
+  'Zen 5': 100, 'Zen 4': 90, 'Zen 3': 75, 'Zen 2': 60, 'Zen+': 45, 'Zen': 40,
+  'Arrow Lake': 95, 'Raptor Lake Refresh': 90, 'Raptor Lake': 85,
+  'Alder Lake': 80, 'Rocket Lake': 70, 'Comet Lake': 60,
+  'Coffee Lake Refresh': 55, 'Coffee Lake': 50, 'Kaby Lake': 40, 'Skylake': 35,
+};
+
+const GPU_TIER_SCORES = {
+  'RTX 5090': 100, 'RTX 5080': 90, 'RTX 5070 Ti': 80, 'RTX 5070': 72,
+  'RTX 4090': 95, 'RTX 4080': 82, 'RTX 4070 Ti': 72, 'RTX 4070': 62,
+  'RTX 4060 Ti': 50, 'RTX 4060': 45,
+  'RTX 3090': 75, 'RTX 3080': 68, 'RTX 3070': 55, 'RTX 3060 Ti': 48, 'RTX 3060': 42,
+  'RX 9070 XT': 82, 'RX 9070': 72, 'RX 9060': 55,
+  'RX 7900 XTX': 85, 'RX 7900 XT': 78, 'RX 7800 XT': 65, 'RX 7700 XT': 55, 'RX 7600': 40,
+  'RX 6900 XT': 65, 'RX 6800 XT': 60, 'RX 6700 XT': 45, 'RX 6600': 32,
+};
+
+function calcPerformanceScore(parts) {
+  if (!parts) return 0;
+
+  // CPU score
+  let cpuScore = 30;
+  if (parts.cpu?.name) {
+    const name = parts.cpu.name;
+    for (const [arch, score] of Object.entries(CPU_ARCH_SCORES)) {
+      if (name.includes(arch.replace(' ', ''))) { cpuScore = score * 0.5; break; }
+    }
+    // Boost from core count / clock hints in name
+    if (name.includes('X3D')) cpuScore += 15;
+    if (name.match(/i9|9950|9900|7950/)) cpuScore = Math.max(cpuScore, 45);
+    if (name.match(/i7|9800|9700|7800|7700/)) cpuScore = Math.max(cpuScore, 38);
+    if (name.match(/i5|9600|7600|5600/)) cpuScore = Math.max(cpuScore, 30);
+  }
+
+  // GPU score
+  let gpuScore = 25;
+  if (parts.gpu?.name) {
+    const name = parts.gpu.name;
+    for (const [chip, score] of Object.entries(GPU_TIER_SCORES)) {
+      if (name.includes(chip)) { gpuScore = score; break; }
+    }
+  }
+
+  // RAM score
+  let ramScore = 50;
+  if (parts.ram?.name) {
+    const name = parts.ram.name;
+    if (name.includes('DDR5')) ramScore += 30;
+    else if (name.includes('DDR4')) ramScore += 15;
+    const speedMatch = name.match(/(\d{4,5})/);
+    if (speedMatch) {
+      const speed = parseInt(speedMatch[1]);
+      if (speed >= 6000) ramScore += 20;
+      else if (speed >= 4800) ramScore += 10;
+      else if (speed >= 3600) ramScore += 8;
+      else if (speed >= 3200) ramScore += 5;
+    }
+    ramScore = Math.min(100, ramScore);
+  }
+
+  return Math.round((cpuScore * 0.35) + (gpuScore * 0.50) + (ramScore * 0.15));
+}
+
 const EXAMPLE_BUILDS = [
   {
     id: "demo-1",
@@ -78,7 +142,6 @@ function BuildCard({ build, onDelete, canDelete }) {
         <span>Total: ${build.totalPrice ?? 0}</span>
         <span>Budget: ${build.budget ?? 0}</span>
         <span>{build.compatible ? "Compatible" : "Has Issues"}</span>
-        <span>Performance: {build.performanceScore ?? 0}%</span>
       </div>
 
       <ul className="saved-card__parts">
@@ -196,12 +259,6 @@ export default function SavedBuild() {
         {isDemoMode ? (
           <p className="saved-status saved-status--demo">
             Backend unavailable, showing example dashboard data for demo mode.
-          </p>
-        ) : null}
-
-        {isLocalFallback ? (
-          <p className="saved-status saved-status--fallback">
-            Showing local saved builds because backend sync is unavailable right now.
           </p>
         ) : null}
 
